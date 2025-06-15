@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>여행 기록</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #f0f0f0;
+      height: 100vh;
+    }
+    
+    .main-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .main-wrapper > a {
+        margin-top: 20px;
+        font-size: 1em;
+        text-decoration: none;
+        color: #333;
+    }
+
+    .main-wrapper > a:hover {
+        text-decoration: underline;
+    }
+
+    .container {
+      display: flex;
+      gap: 40px;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .image-upload {
+      width: 300px;
+      height: 300px;
+      border: 2px dashed #ccc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      background: #fff;
+    }
+
+    .image-upload input[type="file"] {
+      position: absolute;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    #preview {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .inputs input, .inputs textarea {
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .buttons button {
+      padding: 10px 20px;
+      background: black;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer; /* 버튼에 커서 포인터 추가 */
+    }
+  </style>
+</head>
+<body>
+  <div class="main-wrapper">
+    <div class="container">
+      <div class="image-upload">
+        <label for="fileInput">
+          <img id="preview" src="" alt="+" />
+        </label>
+        <input type="file" id="fileInput" accept="image/*" />
+      </div>
+  
+      <div class="inputs">
+        <input type="date" id="visit_date" />
+        <textarea id="memo" placeholder="MEMO_write anything"></textarea>
+        <input type="text" id="tag" placeholder="Tag_what #you #want" />
+        <div class="buttons">
+          <button onclick="save()">저장</button>
+          <button onclick="getDirections()">길찾기</button>
+        </div>
+      </div>
+    </div>
+    
+    <a href="/map">← 지도로 돌아가기</a>
+  </div>
+
+  <script>
+    let userSettings = {};
+    let isPhotoLoaded = false; // [수정] 사진이 로드되었는지 확인하는 플래그
+
+    document.addEventListener("DOMContentLoaded", () => {
+        fetch("/my-settings")
+          .then(res => res.json())
+          .then(data => {
+            userSettings = data;
+            if (data.dark_mode) {
+              document.body.classList.add("dark");
+            }
+          });
+        loadData();
+    });
+
+    const regionName = new URLSearchParams(window.location.search).get("region_name");
+
+    document.getElementById("fileInput").addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        document.getElementById("preview").src = URL.createObjectURL(file);
+        isPhotoLoaded = true; // [수정] 새 사진 선택 시 플래그를 true로 설정
+      }
+    });
+
+    async function loadData() {
+      if (!regionName) return;
+      const res = await fetch(`/record/${regionName}`);
+      const data = await res.json();
+
+      if (data.photo) {
+        document.getElementById("preview").src = data.photo.path;
+        isPhotoLoaded = true; // [수정] 기존 사진 로드 시 플래그를 true로 설정
+      }
+      if (data.memo) {
+        document.getElementById("memo").value = data.memo.content;
+      }
+      if (data.visit) {
+        document.getElementById("visit_date").value = data.visit.visit_date;
+      }
+      if (data.tag) {
+        document.getElementById("tag").value = data.tag.keyword;
+      }
+    }
+
+    async function save() {
+      const visit_date = document.getElementById("visit_date").value;
+      const memo = document.getElementById("memo").value;
+      const tag = document.getElementById("tag").value;
+      const file = document.getElementById("fileInput").files[0];
+
+      // [수정] 유효성 검사: 새로 선택한 파일도 없고, 기존에 로드된 사진도 없을 때만 경고
+      if (!file && !isPhotoLoaded) {
+          alert("사진을 선택하세요");
+          return;
+      }
+      if (!visit_date) {
+        alert("날짜를 선택하세요");
+        return;
+      }
+      if (!memo) {
+        alert("메모를 입력하세요");
+        return;
+      }
+      if (!tag) {
+        alert("태그를 입력하세요");
+        return;
+      }
+
+      const formData = new FormData();
+      
+      // [수정] 새로 선택한 파일이 있을 경우에만 formData에 추가
+      if (file) {
+        formData.append("photo", file);
+      }
+      
+      formData.append("region_name", regionName);
+      formData.append("visit_date", visit_date);
+      formData.append("memo", memo);
+      formData.append("tag", tag);
+
+      try {
+        // 서버 요청은 /upload로 동일하게 보냅니다.
+        const res = await fetch("/upload", {
+          method: "POST",
+          body: formData 
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          alert(data.message);
+          window.location.href = "/map";
+        } else {
+          const errorData = await res.json();
+          alert("저장에 실패했습니다: " + (errorData.message || "서버 오류"));
+        }
+      } catch (error) {
+        console.error("저장 중 오류 발생:", error);
+        alert("서버와 통신 중 오류가 발생했습니다.");
+      }
+    }
+
+    function getDirections() {
+        let url;
+        const encodedRegion = encodeURIComponent(regionName);
+        if (userSettings.nav_app === 'naver') {
+            url = `https://map.naver.com/v5/search/${encodedRegion}`;
+        } else {
+            url = `https://map.kakao.com/link/to/${encodedRegion}`;
+        }
+        window.open(url, "_blank");
+    }
+  </script>
+</body>
+</html>

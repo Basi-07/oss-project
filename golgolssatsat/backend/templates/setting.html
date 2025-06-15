@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>마이페이지</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f5f5f5;
+      color: #000;
+      transition: background 0.5s, color 0.5s;
+      padding: 20px;
+    }
+
+    body.dark {
+      background: #1e1e1e;
+      color: #fff;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+
+    body.dark .container {
+      background: #333;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin: 15px 0;
+    }
+
+    select, input[type="checkbox"] {
+      margin-top: 8px;
+    }
+
+    .buttons {
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: black;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .back {
+      display: block;
+      margin-top: 20px;
+      text-align: center;
+      text-decoration: none;
+      color: #007bff;
+    }
+
+    .back:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>⚙ 마이페이지</h2>
+
+    <label>
+      <input type="checkbox" id="darkMode" />
+      다크모드
+    </label>
+
+    <label>
+      길찾기 앱 선택:
+      <select id="navApp">
+        <option value="kakao">카카오맵</option>
+        <option value="naver">네이버지도</option>
+      </select>
+    </label>
+
+    <div class="buttons">
+      <button onclick="save()">저장</button>
+    </div>
+
+    <a href="/map" class="back">← 지도로 돌아가기</a>
+  </div>
+
+  <script>
+    async function save() {
+      const dark = document.getElementById("darkMode").checked;
+      const nav = document.getElementById("navApp").value; // 'navApp'으로 변경
+
+      const res = await fetch("/settings", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        // 'map_style' -> 'nav_app' 으로 키 이름 변경
+        body: JSON.stringify({ dark_mode: dark, nav_app: nav })
+      });
+
+      const result = await res.json();
+      alert(result.message || "저장 완료");
+
+      if (dark) {
+        document.body.classList.add("dark");
+      } else {
+        document.body.classList.remove("dark");
+      }
+    }
+
+    async function loadSettings() {
+      const res = await fetch("/my-settings");
+      const data = await res.json();
+
+      if (data.dark_mode) {
+        document.getElementById("darkMode").checked = true;
+        document.body.classList.add("dark");
+      }
+
+      // 'map_style' -> 'nav_app' 으로 키 이름 변경
+      if (data.nav_app) {
+        document.getElementById("navApp").value = data.nav_app;
+      }
+    }
+
+    loadSettings();
+  </script>
+</body>
+</html>

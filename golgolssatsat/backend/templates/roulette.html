@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>룰렛 추천</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100vh;
+      background-color: #f9f9f9;
+    }
+
+    h2 {
+      font-size: 2em;
+      margin-bottom: 20px;
+    }
+
+    button {
+      font-size: 1.2em;
+      padding: 12px 24px;
+    }
+
+    #result {
+      margin-top: 30px;
+      font-size: 1.8em;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    a {
+      margin-top: 20px;
+      font-size: 1em;
+    }
+  </style>
+</head>
+<body>
+  <h2>룰렛으로 여행지 추천</h2>
+  <button onclick="spin()">🎲 룰렛 돌리기</button>
+  <p id="result"></p>
+  <a href="/map">← 지도로 돌아가기</a>
+
+  <script>
+      // 모든 페이지에서 dark mode 유지
+    fetch("/my-settings")
+      .then(res => res.json())
+      .then(data => {
+        if (data.dark_mode) {
+          document.body.classList.add("dark");
+        }
+      });
+
+
+    function spin() {
+      fetch("/roulette-api")
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("result").textContent = "추천 지역: " + data.name;
+        })
+        .catch(error => {
+          document.getElementById("result").textContent = "오류 발생: " + error;
+        });
+    }
+  </script>
+</body>
+</html>

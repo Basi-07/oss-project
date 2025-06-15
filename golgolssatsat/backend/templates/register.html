@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>회원가입</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* 로그인 페이지와 동일한 스타일 적용 */
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        height: 100vh;
+        margin: 0;
+        background-color: #f4f7f6;
+    }
+
+    .login-box { /* 클래스 이름을 login-box로 통일하여 스타일 재사용 */
+        background: #fff;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        width: 100%;
+        max-width: 400px;
+        text-align: center;
+    }
+
+    body.dark {
+        background-color: #1e1e1e;
+    }
+    body.dark .login-box {
+        background-color: #333;
+    }
+    body.dark h2, body.dark a {
+        color: #fff;
+    }
+
+    h2 {
+        margin-top: 0;
+        margin-bottom: 25px;
+        font-size: 24px;
+    }
+
+    #registerForm input {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+    }
+
+    #registerForm button {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 5px;
+        background-color: #007bff;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    #registerForm button:hover {
+        background-color: #0056b3;
+    }
+
+    .login-box > a {
+        display: inline-block;
+        margin-top: 20px;
+        color: #007bff;
+        text-decoration: none;
+        font-size: 14px;
+    }
+
+    .login-box > a:hover {
+        text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <h2>회원가입</h2>
+    <form id="registerForm">
+      <input type="text" placeholder="이름" id="name" required>
+      <input type="email" placeholder="이메일" id="email" required>
+      <input type="password" placeholder="비밀번호" id="password" required>
+      <button type="submit">가입하기</button>
+    </form>
+    <a href="{{ url_for('login') }}">이미 계정이 있으신가요? 로그인</a>
+  </div>
+
+  <script>
+    // 다크모드 유지 (기존 코드와 동일)
+    fetch("/my-settings")
+      .then(res => res.json())
+      .then(data => {
+        if (data.dark_mode) {
+          document.body.classList.add("dark");
+        }
+      });
+
+    // 회원가입 폼 제출 이벤트 (기존 코드와 동일)
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const res = await fetch("/register", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          name: document.getElementById("name").value,
+          email: document.getElementById("email").value,
+          password: document.getElementById("password").value
+        })
+      });
+      const data = await res.json();
+      alert(data.message);
+      if (res.ok) location.href = "/login";
+    });
+  </script>
+</body>
+</html>

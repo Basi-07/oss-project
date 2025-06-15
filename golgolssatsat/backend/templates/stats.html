@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>통계 보기</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+        background-color: #f4f7f6;
+        font-family: sans-serif;
+    }
+    body.dark {
+        background-color: #1e1e1e;
+        color: #fff;
+    }
+    .page-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 20px;
+    }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 30px;
+    }
+    .stat-card {
+        background: #fff;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    body.dark .stat-card {
+        background: #333;
+    }
+    .stat-card h3 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        font-size: 1.2em;
+        color: #555;
+    }
+    body.dark .stat-card h3 {
+        color: #ccc;
+    }
+    .progress-bar-container {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 5px;
+        height: 25px;
+    }
+    .progress-bar {
+        width: 0%; /* JavaScript로 채워짐 */
+        height: 100%;
+        background-color: #4CAF50;
+        border-radius: 5px;
+        text-align: center;
+        line-height: 25px;
+        color: white;
+        font-weight: bold;
+        transition: width 1s ease-in-out;
+    }
+    .back-link {
+        display: inline-block;
+        margin-top: 30px;
+        text-decoration: none;
+        color: #007bff;
+    }
+    .back-link:hover {
+        text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-container">
+    <h2>여행 통계</h2>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>전체 여행 진행률 (<span id="visited-count">0</span> / <span id="total-count">0</span>)</h3>
+        <div class="progress-bar-container">
+            <div id="completion-progress" class="progress-bar"></div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <h3>지역별 방문 분포</h3>
+        <canvas id="visitsByProvinceChart"></canvas>
+      </div>
+
+      <div class="stat-card">
+        <h3>월별 여행 기록</h3>
+        <canvas id="visitsByMonthChart"></canvas>
+      </div>
+    </div>
+    
+    <a href="/map" class="back-link">← 지도로 돌아가기</a>
+  </div>
+
+  <script>
+    // 다크모드 설정 적용
+    fetch("/my-settings")
+      .then(res => res.json())
+      .then(data => {
+        if (data.dark_mode) {
+          document.body.classList.add("dark");
+        }
+      });
+    
+    // 통계 데이터 불러오기 및 차트 그리기
+    fetch("/api/statistics")
+      .then(res => res.json())
+      .then(data => {
+        // 1. 진행률 업데이트
+        document.getElementById("visited-count").textContent = data.visited_regions_count;
+        document.getElementById("total-count").textContent = data.total_regions_count;
+        const progressBar = document.getElementById("completion-progress");
+        progressBar.style.width = data.completion_rate + "%";
+        progressBar.textContent = data.completion_rate + "%";
+
+        // 2. 지역별 방문 분포 (원형 차트)
+        const ctxPie = document.getElementById('visitsByProvinceChart').getContext('2d');
+        new Chart(ctxPie, {
+            type: 'pie',
+            data: {
+                labels: data.visits_by_province.labels,
+                datasets: [{
+                    label: '지역별 방문',
+                    data: data.visits_by_province.data,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true
+            }
+        });
+
+        // 3. 월별 여행 기록 (막대 차트)
+        const ctxBar = document.getElementById('visitsByMonthChart').getContext('2d');
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: data.visits_by_month.labels,
+                datasets: [{
+                    label: '월별 방문 횟수',
+                    data: data.visits_by_month.data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1 // y축 단위를 1로 설정
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false // 범례 숨기기
+                    }
+                }
+            }
+        });
+      });
+  </script>
+</body>
+</html>

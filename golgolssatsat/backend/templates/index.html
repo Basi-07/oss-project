@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>골골샅샅 - 홈</title>
+  {% set user_setting = user_settings.get(session.get('user_email'), {}) %}
+  <link rel="stylesheet" href="{{ '/static/style_dark.css' if user_setting.get('dark_mode') else '/static/style.css' }}">
+</head>
+<body>
+  <div class="container" style="text-align: center; margin-top: 100px;">
+    <h1>🌏 골골샅샅에 오신 걸 환영합니다!</h1>
+    <p>국내 여행을 기록하고, 퍼즐로 남겨보세요.</p>
+    
+    <div style="margin-top: 40px;">
+      <a href="/login"><button>🔐 로그인</button></a>
+      <a href="/register"><button>📝 회원가입</button></a>
+    </div>
+  </div>
+</body>
+</html>
